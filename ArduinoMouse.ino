@@ -1,15 +1,11 @@
 /*
- Mouse Controller Example
+ ArduinoMouse
  
- Shows the output of a USB Mouse connected to 
- the Native USB port on an Arduino Due Board.
+ Uses mouse input data to perform several functions
  
- created 8 Oct 2012
- by Cristian Maglie
+ created 25 Jun 2013
+ by David Alelyunas
  
- http://arduino.cc/en/Tutorial/MouseController
- 
- This sample code is part of the public domain.
  */
 
 // Require mouse control library
@@ -58,10 +54,7 @@ USBHost usb;
 // Attach mouse controller to USB
 MouseController mouse(usb);
 
-// variables for mouse button states
-boolean leftButton = false;
-boolean middleButton = false;
-boolean rightButton = false;
+
 
 //values for total x traveled and total y traveled
 int totalX;
@@ -70,18 +63,30 @@ int totalY;
 //desired value for the leds to all be lit at
 int maxValue = 0;
 
+//time keeping values
+float startTime = 0;
+float currentTime = 0;
+boolean startRecorded = false;
+
 // This function intercepts mouse movements
 void mouseMoved() {
+  if(!startRecorded){
+   startTime = millis();
+   currentTime = (millis() - startTime)/1000;
+   startRecorded = true;
+  }
   
   totalX += mouse.getXChange();
-  
+
   totalY += mouse.getYChange();
-  
+
   Serial.print("Total X: ");
   Serial.print(totalX);
   Serial.print(", ");
   Serial.print("Total Y: ");
-  Serial.print(totalY); 
+  Serial.print(totalY);
+  Serial.print(" Time: ");
+  Serial.print(currentTime); 
   Serial.println();
 }
 
@@ -89,27 +94,28 @@ void mouseMoved() {
 
 // This function intercepts mouse button press
 void mousePressed() {
-  
+
   if (mouse.getButton(LEFT_BUTTON)){
     maxValue = 0;
     Serial.println("Enter maximum value:");
     while(maxValue == 0){
       maxValue = Serial.parseInt();
-    
+
     }
     Serial.print("Maximum Value: ");
     Serial.println(maxValue);
-    leftButton = true;
+    
+    startTime = millis();
   }
   /*if (mouse.getButton(MIDDLE_BUTTON)){
-    Serial.print("M");
-    middleButton = true;
-  }*/
+   Serial.print("M");
+   
+   }*/
   if (mouse.getButton(RIGHT_BUTTON)){
     Serial.println("Values Reset");
     totalX = 0;
     totalY = 0;
-    rightButton = true;
+    
   }
 }
 
@@ -117,23 +123,37 @@ void mousePressed() {
 // Checks to see which leds should light up based on a desired distance value
 void checkLEDS() {
   if(abs(totalY) >= (maxValue * 1/3)){
-   digitalWrite(4, HIGH); 
+    digitalWrite(4, HIGH); 
   }
   else{
-   digitalWrite(4, LOW); 
+    digitalWrite(4, LOW); 
   }
   if(abs(totalY) >= (maxValue * 2/3)){
-   digitalWrite(3, HIGH); 
+    digitalWrite(3, HIGH); 
   }
   else{
-   digitalWrite(3, LOW); 
+    digitalWrite(3, LOW); 
   }
   if(abs(totalY) >= maxValue){
-   digitalWrite(2, HIGH); 
+    digitalWrite(2, HIGH); 
   }
   else{
-   digitalWrite(2, LOW); 
+    digitalWrite(2, LOW); 
   }
+}
+
+void lcdDisplay(){
+   //writes the totalY value to the LCD screen
+  tft.fillScreen(BLACK);
+  tft.setCursor(120,200);
+  tft.setTextColor(GREEN);
+  tft.setTextSize(3);
+  tft.print(totalY);
+  //writes the time elapsed since the start of the program in milliseconds
+  tft.setCursor(120,230);
+  tft.print(currentTime);
+  
+  
 }
 
 void setup()
@@ -143,42 +163,35 @@ void setup()
   Serial.println("Program started");
   totalX = 0;
   totalY = 0;
-  
-  
-  
+
+
+
   //reads an integer from the serial stream
   Serial.println("Enter maximum value:");
   while(maxValue == 0){
     maxValue = Serial.parseInt();
-    
-  }
-    Serial.print("Maximum Value: ");
-    Serial.println(maxValue);
 
+  }
+  Serial.print("Maximum Value: ");
+  Serial.println(maxValue);
+  
   pinMode(3, OUTPUT);
   pinMode(2, OUTPUT);
   pinMode(4,OUTPUT);
   digitalWrite(4, LOW);
   digitalWrite(3, LOW);
   digitalWrite(2, LOW);
-  
-  delay(200);
-  
 }
-
-
 
 void loop()
 {
+  currentTime = (millis() - startTime)/1000;
   // Process USB tasks
   usb.Task();
   checkLEDS();
-  tft.fillScreen(BLACK);
-  tft.setCursor(120,200);
-  tft.setTextColor(GREEN);
-  tft.setTextSize(3);
-  tft.print(totalY);
-  
-  
+  lcdDisplay();
+
 }
+
+
 

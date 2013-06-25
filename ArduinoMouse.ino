@@ -59,6 +59,7 @@ MouseController mouse(usb);
 //values for total x traveled and total y traveled
 int totalX;
 int totalY;
+int overallY;
 
 //desired value for the leds to all be lit at
 int maxValue = 0;
@@ -71,14 +72,16 @@ boolean startRecorded = false;
 // This function intercepts mouse movements
 void mouseMoved() {
   if(!startRecorded){
-   startTime = millis();
-   currentTime = (millis() - startTime)/1000;
-   startRecorded = true;
+    startTime = millis();
+    currentTime = (millis() - startTime)/1000;
+    startRecorded = true;
   }
-  
-  totalX += mouse.getXChange();
 
-  totalY += mouse.getYChange();
+  totalX += mouse.getXChange();
+  int tempYChange = mouse.getYChange();;
+  totalY += tempYChange;
+  
+  overallY += abs(tempYChange);
 
   Serial.print("Total X: ");
   Serial.print(totalX);
@@ -104,7 +107,7 @@ void mousePressed() {
     }
     Serial.print("Maximum Value: ");
     Serial.println(maxValue);
-    
+
     startTime = millis();
   }
   /*if (mouse.getButton(MIDDLE_BUTTON)){
@@ -113,10 +116,17 @@ void mousePressed() {
    }*/
   if (mouse.getButton(RIGHT_BUTTON)){
     Serial.println("Values Reset");
+    reset();
+
+  }
+}
+//resets values
+void reset(){
+    
     totalX = 0;
     totalY = 0;
-    
-  }
+    overallY = 0;
+    startTime = millis();
 }
 
 
@@ -143,28 +153,37 @@ void checkLEDS() {
 }
 
 void lcdDisplay(){
-   //writes the totalY value to the LCD screen
+  //writes the totalY value to the LCD screen
+  tft.setRotation(5);
   tft.fillScreen(BLACK);
-  tft.setCursor(120,200);
+  tft.setCursor(0,100);
   tft.setTextColor(GREEN);
-  tft.setTextSize(3);
+  tft.setTextSize(2);
+  tft.print("Distance: ");
   tft.print(totalY);
+  
+  tft.setCursor(0, 160);
+  tft.print("TtlDist:");
+  tft.print(" ");
+  tft.print(overallY);
   //writes the time elapsed since the start of the program in milliseconds
-  tft.setCursor(120,230);
-  tft.print(currentTime);
-  
-  
+  if(startRecorded){
+    tft.setCursor(0,130);
+    tft.print("Time: ");
+    tft.print(currentTime);
+  }
+
+
 }
 
 void setup()
 {
   Serial.begin(115200);
   tft.begin();
+  
   Serial.println("Program started");
   totalX = 0;
   totalY = 0;
-
-
 
   //reads an integer from the serial stream
   Serial.println("Enter maximum value:");
@@ -174,10 +193,11 @@ void setup()
   }
   Serial.print("Maximum Value: ");
   Serial.println(maxValue);
-  
+
   pinMode(3, OUTPUT);
   pinMode(2, OUTPUT);
   pinMode(4,OUTPUT);
+  pinMode(7, INPUT);
   digitalWrite(4, LOW);
   digitalWrite(3, LOW);
   digitalWrite(2, LOW);
@@ -186,12 +206,18 @@ void setup()
 void loop()
 {
   currentTime = (millis() - startTime)/1000;
+
   // Process USB tasks
   usb.Task();
-  checkLEDS();
   lcdDisplay();
+  checkLEDS();
+  if(digitalRead(7) == HIGH){
+    reset(); 
+  }
 
 }
+
+
 
 
 

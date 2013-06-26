@@ -90,6 +90,9 @@ void mouseMoved() {
   totalY += tempYChange;
 
   overallY += abs(tempYChange);
+  
+  currentTime = (millis() - startTime)/1000;
+  pixelPS = abs(totalY-prevY) / abs(currentTime-prevTime);
 
   Serial.print("Total X: ");
   Serial.print(totalX);
@@ -98,6 +101,9 @@ void mouseMoved() {
   Serial.print(totalY);
   Serial.print(" Time: ");
   Serial.print(currentTime); 
+   
+  Serial.print(" PPS = ");
+  Serial.print(pixelPS);
   Serial.println();
 }
 
@@ -186,21 +192,21 @@ void lcdDisplay(){
 void displayProgress(){
   String bar = "|";
   float percent = ((float(abs(totalY))/float(maxValue)) * 100.0)/10.0;
-  
+
   tft.setCursor(20, 190);
-  
+
   if(percent<=10){
     for(int i = 0; i<int(percent) ;i++){
       bar+= "-";
-
     }
     for(int i = 0;i<10- int(percent);i++){
       bar+= " "; 
     }
   }
   else{
-   bar+= "----------"; 
+    bar+= "----------"; 
   }
+  
   bar+="|";
   tft.print(bar);
 }
@@ -237,8 +243,7 @@ void setup()
 
 void loop()
 {
-  currentTime = (millis() - startTime)/1000;
-  pixelPS = totalY / currentTime;
+ 
 
   // Process USB tasks
   usb.Task();
@@ -248,8 +253,10 @@ void loop()
   if(digitalRead(7) == HIGH){
     reset(); 
   }
-
+  prevY = totalY;
+  prevTime = currentTime;
 }
+
 
 
 

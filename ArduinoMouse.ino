@@ -64,7 +64,7 @@ int prevY;
 int overallY;
 
 //desired value for the leds to all be lit at
-int maxValue = 0;
+int maxValue = 600;
 
 //time keeping values
 float startTime = 0;

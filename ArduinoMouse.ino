@@ -38,7 +38,7 @@
 
 // Assign human-readable names to some common 16-bit color values:
 #define	BLACK   0x0000
-#define	BLUE    0x001F
+#define	BLUE    0x001F 
 #define	RED     0xF800
 #define	GREEN   0x07E0
 #define CYAN    0x07FF
@@ -47,6 +47,7 @@
 #define WHITE   0xFFFF
 
 TFTLCD tft;
+
 // Initialize USB Controller
 USBHost usb;
 
@@ -59,6 +60,7 @@ MouseController mouse(usb);
 //values for total x traveled and total y traveled
 int totalX;
 int totalY;
+int prevY;
 int overallY;
 
 //desired value for the leds to all be lit at
@@ -67,7 +69,12 @@ int maxValue = 0;
 //time keeping values
 float startTime = 0;
 float currentTime = 0;
+float prevTime = 0;
+
 boolean startRecorded = false;
+
+//pixels/sec
+float pixelPS = 0;
 
 // This function intercepts mouse movements
 void mouseMoved() {
@@ -78,9 +85,10 @@ void mouseMoved() {
   }
 
   totalX += mouse.getXChange();
-  int tempYChange = mouse.getYChange();;
+  int tempYChange = mouse.getYChange();
+  ;
   totalY += tempYChange;
-  
+
   overallY += abs(tempYChange);
 
   Serial.print("Total X: ");
@@ -122,11 +130,11 @@ void mousePressed() {
 }
 //resets values
 void reset(){
-    
-    totalX = 0;
-    totalY = 0;
-    overallY = 0;
-    startTime = millis();
+
+  totalX = 0;
+  totalY = 0;
+  overallY = 0;
+  startTime = millis();
 }
 
 
@@ -154,33 +162,57 @@ void checkLEDS() {
 
 void lcdDisplay(){
   //writes the totalY value to the LCD screen
-  tft.setRotation(5);
+  tft.setRotation(3);
+  tft.setAddrWindow(300, 0, 239, 399);
   tft.fillScreen(BLACK);
-  tft.setCursor(0,100);
+  tft.setCursor(20,100);
   tft.setTextColor(GREEN);
   tft.setTextSize(2);
   tft.print("Distance: ");
   tft.print(totalY);
-  
-  tft.setCursor(0, 160);
+
+  tft.setCursor(20, 160);
   tft.print("TtlDist:");
   tft.print(" ");
   tft.print(overallY);
   //writes the time elapsed since the start of the program in milliseconds
   if(startRecorded){
-    tft.setCursor(0,130);
+    tft.setCursor(20,130);
     tft.print("Time: ");
     tft.print(currentTime);
   }
-
-
 }
+
+void displayProgress(){
+  String bar = "|";
+  float percent = ((float(abs(totalY))/float(maxValue)) * 100.0)/10.0;
+  
+  tft.setCursor(20, 190);
+  
+  if(percent<=10){
+    for(int i = 0; i<int(percent) ;i++){
+      bar+= "-";
+
+    }
+    for(int i = 0;i<10- int(percent);i++){
+      bar+= " "; 
+    }
+  }
+  else{
+   bar+= "----------"; 
+  }
+  bar+="|";
+  tft.print(bar);
+}
+
+
+
 
 void setup()
 {
   Serial.begin(115200);
   tft.begin();
-  
+
   Serial.println("Program started");
   totalX = 0;
   totalY = 0;
@@ -206,16 +238,20 @@ void setup()
 void loop()
 {
   currentTime = (millis() - startTime)/1000;
+  pixelPS = totalY / currentTime;
 
   // Process USB tasks
   usb.Task();
   lcdDisplay();
+  displayProgress();
   checkLEDS();
   if(digitalRead(7) == HIGH){
     reset(); 
   }
 
 }
+
+
 
 
 

@@ -91,7 +91,7 @@ void mouseMoved() {
 
   overallY += abs(tempYChange);
   
-  currentTime = (millis() - startTime)/1000;
+  
   pixelPS = abs(totalY-prevY) / abs(currentTime-prevTime);
 
   Serial.print("Total X: ");
@@ -244,7 +244,7 @@ void setup()
 void loop()
 {
  
-
+  currentTime = (millis() - startTime)/1000;
   // Process USB tasks
   usb.Task();
   lcdDisplay();

@@ -20,7 +20,6 @@ void draw() {
   if (port.available() > 0) {
     input = (port.readString());
     output.println(input);
-    //println(input);
   }
 }
 

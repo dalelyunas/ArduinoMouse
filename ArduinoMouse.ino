@@ -62,9 +62,10 @@ int totalX;
 int totalY;
 int prevY;
 int overallY;
+int axisInUse;
 
 //desired value for the leds to all be lit at
-int maxValue = 600;
+int maxValue = 3000;
 
 //time keeping values
 float startTime = 0;
@@ -90,20 +91,22 @@ void mouseMoved() {
   totalY += tempYChange;
 
   overallY += abs(tempYChange);
-  
-  
-  pixelPS = abs(totalY-prevY) / abs(currentTime-prevTime);
 
-  Serial.print("Total X: ");
-  Serial.print(totalX);
+
+  //pixelPS = abs(totalY-prevY) / abs(currentTime-prevTime);
+
+  //Serial.print("Total X: ");
+  //Serial.print(totalX);
+  //Serial.print(", ");
+  //Serial.print(", Time, ");
+  Serial.print(currentTime);
   Serial.print(", ");
-  Serial.print("Total Y: ");
-  Serial.print(totalY);
-  Serial.print(" Time: ");
-  Serial.print(currentTime); 
+ // Serial.print("Total Y, ");
+  Serial.print(axisInUse);
    
-  Serial.print(" PPS = ");
-  Serial.print(pixelPS);
+
+  //Serial.print(" PPS = ");
+  //Serial.print(float(totalY)/390.0);
   Serial.println();
 }
 
@@ -146,19 +149,19 @@ void reset(){
 
 // Checks to see which leds should light up based on a desired distance value
 void checkLEDS() {
-  if(abs(totalY) >= (maxValue * 1/3)){
+  if(abs(axisInUse) >= (maxValue * 1/3)){
     digitalWrite(4, HIGH); 
   }
   else{
     digitalWrite(4, LOW); 
   }
-  if(abs(totalY) >= (maxValue * 2/3)){
+  if(abs(axisInUse) >= (maxValue * 2/3)){
     digitalWrite(3, HIGH); 
   }
   else{
     digitalWrite(3, LOW); 
   }
-  if(abs(totalY) >= maxValue){
+  if(abs(axisInUse) >= maxValue){
     digitalWrite(2, HIGH); 
   }
   else{
@@ -175,12 +178,14 @@ void lcdDisplay(){
   tft.setTextColor(GREEN);
   tft.setTextSize(2);
   tft.print("Distance: ");
-  tft.print(totalY);
+  tft.print(axisInUse);
 
+  //writes the total distance traveled to the LCD screen
   tft.setCursor(20, 160);
   tft.print("TtlDist:");
   tft.print(" ");
   tft.print(overallY);
+
   //writes the time elapsed since the start of the program in milliseconds
   if(startRecorded){
     tft.setCursor(20,130);
@@ -189,9 +194,10 @@ void lcdDisplay(){
   }
 }
 
+//displays a bar that displays progress towards the maxValue in increments of 10 percent
 void displayProgress(){
   String bar = "|";
-  float percent = ((float(abs(totalY))/float(maxValue)) * 100.0)/10.0;
+  float percent = ((float(abs(axisInUse))/float(maxValue)) * 100.0)/10.0;
 
   tft.setCursor(20, 190);
 
@@ -206,7 +212,7 @@ void displayProgress(){
   else{
     bar+= "----------"; 
   }
-  
+
   bar+="|";
   tft.print(bar);
 }
@@ -243,24 +249,18 @@ void setup()
 
 void loop()
 {
- 
+
   currentTime = (millis() - startTime)/1000;
+  
   // Process USB tasks
   usb.Task();
+  axisInUse = totalY;
   lcdDisplay();
   displayProgress();
   checkLEDS();
-  if(digitalRead(7) == HIGH){
-    reset(); 
-  }
   prevY = totalY;
   prevTime = currentTime;
 }
 
-
-
-
-
-
-
+ 
 

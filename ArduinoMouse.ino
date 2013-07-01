@@ -105,8 +105,8 @@ void mouseMoved() {
   Serial.print(axisInUse);
    
 
-  //Serial.print(" PPS = ");
-  //Serial.print(float(totalY)/390.0);
+  //Serial.print(" cm = ");
+  //Serial.print(float(totalY)/443.0);
   Serial.println();
 }
 
@@ -116,16 +116,7 @@ void mouseMoved() {
 void mousePressed() {
 
   if (mouse.getButton(LEFT_BUTTON)){
-    maxValue = 0;
-    Serial.println("Enter maximum value:");
-    while(maxValue == 0){
-      maxValue = Serial.parseInt();
-
-    }
-    Serial.print("Maximum Value: ");
-    Serial.println(maxValue);
-
-    startTime = millis();
+    Serial.println("End");
   }
   /*if (mouse.getButton(MIDDLE_BUTTON)){
    Serial.print("M");
@@ -171,27 +162,30 @@ void checkLEDS() {
 
 void lcdDisplay(){
   //writes the totalY value to the LCD screen
-  tft.setRotation(3);
-  tft.setAddrWindow(300, 0, 239, 399);
   tft.fillScreen(BLACK);
-  tft.setCursor(20,100);
+  
+  tft.setCursor(20,30);
   tft.setTextColor(GREEN);
   tft.setTextSize(2);
   tft.print("Distance: ");
   tft.print(axisInUse);
 
   //writes the total distance traveled to the LCD screen
-  tft.setCursor(20, 160);
+  tft.setCursor(20, 90);
   tft.print("TtlDist:");
   tft.print(" ");
   tft.print(overallY);
 
   //writes the time elapsed since the start of the program in milliseconds
   if(startRecorded){
-    tft.setCursor(20,130);
+    tft.setCursor(20,60);
     tft.print("Time: ");
     tft.print(currentTime);
   }
+  
+  
+  
+
 }
 
 //displays a bar that displays progress towards the maxValue in increments of 10 percent
@@ -199,7 +193,7 @@ void displayProgress(){
   String bar = "|";
   float percent = ((float(abs(axisInUse))/float(maxValue)) * 100.0)/10.0;
 
-  tft.setCursor(20, 190);
+  tft.setCursor(20, 120);
 
   if(percent<=10){
     for(int i = 0; i<int(percent) ;i++){
@@ -224,7 +218,13 @@ void setup()
 {
   Serial.begin(115200);
   tft.begin();
-
+  
+  Serial.println();
+  Serial.println();
+  Serial.println();
+  Serial.println();
+  Serial.println();
+  
   Serial.println("Program started");
   totalX = 0;
   totalY = 0;
@@ -237,7 +237,7 @@ void setup()
   }
   Serial.print("Maximum Value: ");
   Serial.println(maxValue);
-
+  Serial.println();
   pinMode(3, OUTPUT);
   pinMode(2, OUTPUT);
   pinMode(4,OUTPUT);
@@ -254,6 +254,7 @@ void loop()
   
   // Process USB tasks
   usb.Task();
+
   axisInUse = totalY;
   lcdDisplay();
   displayProgress();

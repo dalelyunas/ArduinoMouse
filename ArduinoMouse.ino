@@ -62,9 +62,10 @@ int totalX;
 int totalY;
 int prevY;
 int overallY;
+int axisInUse;
 
 //desired value for the leds to all be lit at
-int maxValue = 600;
+int maxValue = 3000;
 
 //time keeping values
 float startTime = 0;
@@ -91,13 +92,21 @@ void mouseMoved() {
 
   overallY += abs(tempYChange);
 
-  Serial.print("Total X: ");
-  Serial.print(totalX);
+
+  //pixelPS = abs(totalY-prevY) / abs(currentTime-prevTime);
+
+  //Serial.print("Total X: ");
+  //Serial.print(totalX);
+  //Serial.print(", ");
+  //Serial.print(", Time, ");
+  Serial.print(currentTime);
   Serial.print(", ");
-  Serial.print("Total Y: ");
-  Serial.print(totalY);
-  Serial.print(" Time: ");
-  Serial.print(currentTime); 
+ // Serial.print("Total Y, ");
+  Serial.print(axisInUse);
+   
+
+  //Serial.print(" cm = ");
+  //Serial.print(float(totalY)/443.0);
   Serial.println();
 }
 
@@ -107,16 +116,7 @@ void mouseMoved() {
 void mousePressed() {
 
   if (mouse.getButton(LEFT_BUTTON)){
-    maxValue = 0;
-    Serial.println("Enter maximum value:");
-    while(maxValue == 0){
-      maxValue = Serial.parseInt();
-
-    }
-    Serial.print("Maximum Value: ");
-    Serial.println(maxValue);
-
-    startTime = millis();
+    Serial.println("End");
   }
   /*if (mouse.getButton(MIDDLE_BUTTON)){
    Serial.print("M");
@@ -140,19 +140,19 @@ void reset(){
 
 // Checks to see which leds should light up based on a desired distance value
 void checkLEDS() {
-  if(abs(totalY) >= (maxValue * 1/3)){
+  if(abs(axisInUse) >= (maxValue * 1/3)){
     digitalWrite(4, HIGH); 
   }
   else{
     digitalWrite(4, LOW); 
   }
-  if(abs(totalY) >= (maxValue * 2/3)){
+  if(abs(axisInUse) >= (maxValue * 2/3)){
     digitalWrite(3, HIGH); 
   }
   else{
     digitalWrite(3, LOW); 
   }
-  if(abs(totalY) >= maxValue){
+  if(abs(axisInUse) >= maxValue){
     digitalWrite(2, HIGH); 
   }
   else{
@@ -162,45 +162,51 @@ void checkLEDS() {
 
 void lcdDisplay(){
   //writes the totalY value to the LCD screen
-  tft.setRotation(3);
-  tft.setAddrWindow(300, 0, 239, 399);
   tft.fillScreen(BLACK);
-  tft.setCursor(20,100);
+  
+  tft.setCursor(20,30);
   tft.setTextColor(GREEN);
   tft.setTextSize(2);
   tft.print("Distance: ");
-  tft.print(totalY);
+  tft.print(axisInUse);
 
-  tft.setCursor(20, 160);
+  //writes the total distance traveled to the LCD screen
+  tft.setCursor(20, 90);
   tft.print("TtlDist:");
   tft.print(" ");
   tft.print(overallY);
+
   //writes the time elapsed since the start of the program in milliseconds
   if(startRecorded){
-    tft.setCursor(20,130);
+    tft.setCursor(20,60);
     tft.print("Time: ");
     tft.print(currentTime);
   }
+  
+  
+  
+
 }
 
+//displays a bar that displays progress towards the maxValue in increments of 10 percent
 void displayProgress(){
   String bar = "|";
-  float percent = ((float(abs(totalY))/float(maxValue)) * 100.0)/10.0;
-  
-  tft.setCursor(20, 190);
-  
+  float percent = ((float(abs(axisInUse))/float(maxValue)) * 100.0)/10.0;
+
+  tft.setCursor(20, 120);
+
   if(percent<=10){
     for(int i = 0; i<int(percent) ;i++){
       bar+= "-";
-
     }
     for(int i = 0;i<10- int(percent);i++){
       bar+= " "; 
     }
   }
   else{
-   bar+= "----------"; 
+    bar+= "----------"; 
   }
+
   bar+="|";
   tft.print(bar);
 }
@@ -212,7 +218,13 @@ void setup()
 {
   Serial.begin(115200);
   tft.begin();
-
+  
+  Serial.println();
+  Serial.println();
+  Serial.println();
+  Serial.println();
+  Serial.println();
+  
   Serial.println("Program started");
   totalX = 0;
   totalY = 0;
@@ -225,7 +237,7 @@ void setup()
   }
   Serial.print("Maximum Value: ");
   Serial.println(maxValue);
-
+  Serial.println();
   pinMode(3, OUTPUT);
   pinMode(2, OUTPUT);
   pinMode(4,OUTPUT);
@@ -237,23 +249,19 @@ void setup()
 
 void loop()
 {
-  currentTime = (millis() - startTime)/1000;
-  pixelPS = totalY / currentTime;
 
+  currentTime = (millis() - startTime)/1000;
+  
   // Process USB tasks
   usb.Task();
+
+  axisInUse = totalY;
   lcdDisplay();
   displayProgress();
   checkLEDS();
-  if(digitalRead(7) == HIGH){
-    reset(); 
-  }
-
+  prevY = totalY;
+  prevTime = currentTime;
 }
 
-
-
-
-
-
+ 
 

@@ -62,8 +62,10 @@ Point p;
 // Attach mouse controller to USB
 MouseController mouse(usb);
 
+//variables to control the keyboard
 int enterValue = 0;
 int prevEnterValue = 0;
+boolean pressed = true;
 
 //values for total x traveled and total y traveled
 int totalX;
@@ -78,7 +80,6 @@ int maxValue = 0;
 //time keeping values
 float startTime = 0;
 float currentTime = 0;
-
 boolean startRecorded = false;
 
 // This function intercepts mouse movements
@@ -182,37 +183,35 @@ void lcdDisplay(){
   }
 }
 
-//displays a bar that displays progress towards the maxValue in increments of 10 percent
+//displays a rectangle that displays progress towards the maxValue in 200ths
 void displayProgress(){
-  String bar = "|";
-  float percent = ((float(abs(axisInUse))/float(maxValue)) * 100.0)/10.0;
-
-  tft.setCursor(20, 120);
-
-  if(percent<=10){
-    for(int i = 0; i<int(percent) ;i++){
-      bar+= "-";
-    }
-    for(int i = 0;i<10- int(percent);i++){
-      bar+= " "; 
-    }
+  tft.setCursor(20,210);
+  
+  float percent = (float(abs(axisInUse))/float(maxValue));
+  if(percent < 1){
+  tft.fillRect(20,180,200*percent,20,GREEN);
   }
-  else{
-    bar+= "----------"; 
+  else if(percent > .99 && percent < 1.01){
+   tft.setTextColor(YELLOW);
+   tft.print("Max Reached");
+   tft.fillRect(20,180,200,20, YELLOW); 
   }
-
-  bar+="|";
-  tft.print(bar);
+  else if (percent > 1.01){
+   tft.setTextColor(RED);
+   tft.print("Too Far");
+   tft.fillRect(20,180,200,20,RED); 
+  }
 }
 
+//displays the keyboard
 void displayTouchKeyboard(){
   int x = 20;
   int y = 220;
   int number = 0;
   int side = 30;
   tft.setCursor(20, 150);
-    tft.print("Enter Max Value:");
-  
+  tft.print("Enter Max Value:");
+
   for(int i = 0;i<2;i++){
     for(int z = 0; z<5;z++){
       tft.drawRect(x+40*z,y+40*i,side,side,GREEN);
@@ -231,97 +230,93 @@ void displayTouchKeyboard(){
 
 }
 
-boolean pressed = true;
 
+//determines when keys are pressed and what to do when a key is pressed
 void interpretKeys(){
-  int x = 20;
-  int y = 220;
-  int number = 0;
-  int side = 30;
-String temp = "";
-temp += enterValue;
 
-if(temp.length()<7){
-  if(((p.x-310)/14 < 42 && (p.x-310)/14 > 16) && ((p.y-150)/9> 229 && (p.y-150)/9< 253)){
-    if(pressed){
-     enterValue = enterValue*10 + 0;
-     pressed = false;
+  String temp = "";
+  temp += enterValue;
+
+  if(temp.length()<7){
+    if(((p.x-310)/14 < 42 && (p.x-310)/14 > 16) && ((p.y-150)/9> 229 && (p.y-150)/9< 253)){
+      if(pressed){
+        enterValue = enterValue*10 + 0;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 83 && (p.x-310)/14 > 58) && ((p.y-150)/9> 229 && (p.y-150)/9< 253)){
+      if(pressed){
+        enterValue = enterValue*10 + 1;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 127 && (p.x-310)/14 > 98) && ((p.y-150)/9> 229 && (p.y-150)/9< 253)){
+      if(pressed){
+        enterValue = enterValue*10 + 2;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 171 && (p.x-310)/14 > 145) && ((p.y-150)/9> 229 && (p.y-150)/9< 253)){
+      if(pressed){
+        enterValue = enterValue*10 + 3;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 212 && (p.x-310)/14 > 185) && ((p.y-150)/9> 229 && (p.y-150)/9< 253)){
+      if(pressed){
+        enterValue = enterValue*10 + 4;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 42 && (p.x-310)/14 > 16) && ((p.y-150)/9> 270 && (p.y-150)/9< 294)){
+      if(pressed){
+        enterValue = enterValue*10 + 5;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 83 && (p.x-310)/14 > 58) && ((p.y-150)/9> 270 && (p.y-150)/9< 294)){
+      if(pressed){
+        enterValue = enterValue*10 + 6;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 127 && (p.x-310)/14 > 98) && ((p.y-150)/9> 270 && (p.y-150)/9< 294)){
+      if(pressed){
+        enterValue = enterValue*10 + 7;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 171 && (p.x-310)/14 > 145) && ((p.y-150)/9> 270 && (p.y-150)/9< 294)){
+      if(pressed){
+        enterValue = enterValue*10 + 8;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 212 && (p.x-310)/14 > 185) && ((p.y-150)/9> 270 && (p.y-150)/9< 294)){
+      if(pressed){
+        enterValue = enterValue*10 + 9;
+        pressed = false;
+      }
     }
   }
-  else if(((p.x-310)/14 < 83 && (p.x-310)/14 > 58) && ((p.y-150)/9> 229 && (p.y-150)/9< 253)){
-     if(pressed){
-     enterValue = enterValue*10 + 1;
-     pressed = false;
-    }
-  }
-  else if(((p.x-310)/14 < 127 && (p.x-310)/14 > 98) && ((p.y-150)/9> 229 && (p.y-150)/9< 253)){
-     if(pressed){
-     enterValue = enterValue*10 + 2;
-     pressed = false;
-    }
-  }
-  else if(((p.x-310)/14 < 171 && (p.x-310)/14 > 145) && ((p.y-150)/9> 229 && (p.y-150)/9< 253)){
-     if(pressed){
-     enterValue = enterValue*10 + 3;
-     pressed = false;
-    }
-  }
-  else if(((p.x-310)/14 < 212 && (p.x-310)/14 > 185) && ((p.y-150)/9> 229 && (p.y-150)/9< 253)){
-     if(pressed){
-     enterValue = enterValue*10 + 4;
-     pressed = false;
-    }
-  }
-  else if(((p.x-310)/14 < 42 && (p.x-310)/14 > 16) && ((p.y-150)/9> 270 && (p.y-150)/9< 294)){
-     if(pressed){
-     enterValue = enterValue*10 + 5;
-     pressed = false;
-    }
-  }
-  else if(((p.x-310)/14 < 83 && (p.x-310)/14 > 58) && ((p.y-150)/9> 270 && (p.y-150)/9< 294)){
-     if(pressed){
-     enterValue = enterValue*10 + 6;
-     pressed = false;
-    }
-  }
-  else if(((p.x-310)/14 < 127 && (p.x-310)/14 > 98) && ((p.y-150)/9> 270 && (p.y-150)/9< 294)){
-     if(pressed){
-     enterValue = enterValue*10 + 7;
-     pressed = false;
-    }
-  }
-  else if(((p.x-310)/14 < 171 && (p.x-310)/14 > 145) && ((p.y-150)/9> 270 && (p.y-150)/9< 294)){
-     if(pressed){
-     enterValue = enterValue*10 + 8;
-     pressed = false;
-    }
-  }
-  else if(((p.x-310)/14 < 212 && (p.x-310)/14 > 185) && ((p.y-150)/9> 270 && (p.y-150)/9< 294)){
-     if(pressed){
-     enterValue = enterValue*10 + 9;
-     pressed = false;
-    }
-  }
-  
-}
   if(((p.x-310)/14 < 212 && (p.x-310)/14 > 123) && ((p.y-150)/9> 310 && (p.y-150)/9< 338)){
-     if(pressed){
-     enterValue = enterValue/10;
-     pressed = false;
+    if(pressed){
+      enterValue = enterValue/10;
+      pressed = false;
     }
   }
   if(((p.x-310)/14 < 108 && (p.x-310)/14 > 16) && ((p.y-150)/9> 310 && (p.y-150)/9< 338)){
-     if(pressed){
-     maxValue = enterValue;
-     pressed = false;
+    if(pressed){
+      maxValue = enterValue;
+      pressed = false;
     }
   }
   if(((p.x-310)/14 == -22) && ((p.y-150)/9 == -16)){
     pressed = true;
-  
+
   }
-  
-  }
+
+}
 
 void setup()
 {
@@ -337,13 +332,13 @@ void setup()
   totalY = 0;
 
   //reads an integer from the keyboard interface
-  
+
   tft.setTextColor(GREEN);
   tft.setTextSize(2);
-  
+  Serial.println("Enter Max Value:");
   while(maxValue == 0){
-    
-    uint8_t flag;
+     maxValue = Serial.parseInt();
+    /*uint8_t flag;
     p = touch.getpos(&flag); 
     displayTouchKeyboard();
     interpretKeys();
@@ -352,9 +347,9 @@ void setup()
     }
     tft.setCursor(20,180);
     tft.print(enterValue);
-    prevEnterValue = enterValue;
+    prevEnterValue = enterValue;*/
   }
-  
+
   tft.fillScreen(BLACK);
   Serial.print("Maximum Value: ");
   Serial.println(maxValue);
@@ -371,15 +366,17 @@ void setup()
 void loop()
 {
   currentTime = (millis() - startTime)/1000;
-  
+
   // Process USB tasks
   usb.Task();
-
+  uhd_set_vbof_active_high();
+  
   axisInUse = totalY;
   lcdDisplay();
   displayProgress();
   checkLEDS();
-  }
+}
+
 
 
 

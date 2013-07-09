@@ -72,7 +72,6 @@ int totalX;
 int totalY;
 int prevY;
 
-//int overallY;
 int axisInUse;
 
 //desired value for the leds to all be lit at
@@ -83,6 +82,8 @@ float startTime = 0;
 float currentTime = 0;
 float prevTime;
 boolean startRecorded = false;
+
+float lastPercent;
 
 // This function intercepts mouse movements
 void mouseMoved() {
@@ -97,19 +98,12 @@ void mouseMoved() {
   ;
   totalY += tempYChange;
 
-  //overallY += abs(tempYChange);
-
-  //Serial.print("Total X: ");
-  //Serial.print(totalX);
-  //Serial.print(", ");
-
   //Serial.print(" Time, ");
   Serial.print(currentTime);
   Serial.print(", ");
 
   // Serial.print("Total Y, ");
   Serial.print(axisInUse);
-
 
   //Serial.print(" mm = ");
   //Serial.print(float(totalY)/443.0);
@@ -126,18 +120,15 @@ void mousePressed() {
   if (mouse.getButton(RIGHT_BUTTON)){
     Serial.println("Values Reset");
     reset();
-
   }
 }
 //resets values
 void reset(){
-
   totalX = 0;
   totalY = 0;
   //overallY = 0;
   startTime = millis();
 }
-
 
 // Checks to see which leds should light up based on a desired distance value
 void checkLEDS() {
@@ -165,16 +156,11 @@ void lcdDisplay(){
   //writes the totalY value to the LCD screen
   //tft.fillScreen(BLACK);
    
-  
   tft.setCursor(20, 90);
   tft.print("EndDist: ");
-  
   tft.print(maxValue);
-  
-  
 
   //writes the total distance traveled to the LCD screen
-    
     tft.setCursor(130,30);
     tft.setTextColor(BLACK);
     tft.print(prevY);
@@ -183,8 +169,7 @@ void lcdDisplay(){
     tft.print(axisInUse);
 
   //writes the time elapsed since the start of the program in milliseconds
-  if(startRecorded){
-    
+  if(startRecorded){   
     tft.setCursor(80,60);
     tft.setTextColor(BLACK);
     tft.print(prevTime);
@@ -196,21 +181,17 @@ void lcdDisplay(){
 
 //displays a rectangle that displays progress towards the maxValue in 200ths
 void displayProgress(){
-  tft.setCursor(20,210);
-
-  float percent = (float(abs(axisInUse))/float(maxValue));
+  float percent = abs(totalY)/float(maxValue);
+  
   if(percent < 1){
+    tft.fillRect(20+ lastPercent*200,180,201 - lastPercent*200,20,BLACK);
     tft.fillRect(20,180,200*percent,20,GREEN);
   }
-  else if(percent > .99 && percent < 1.01){
-    tft.setTextColor(YELLOW);
-    tft.print("Max Reached"); 
-  }
-  else if (percent > 1.01){
+  else if (percent > 1.00){
     tft.setTextColor(RED);
-    tft.print("Too Far");
     tft.fillRect(20,180,200,20,RED); 
   }
+  lastPercent = percent;
 }
 
 //displays the keyboard
@@ -237,9 +218,7 @@ void displayTouchKeyboard(){
   tft.print("Enter");
   tft.setCursor(x+110, y+90);
   tft.print("Back");
-  
 }
-
 
 //determines when keys are pressed and what to do when a key is pressed
 void interpretKeys(){
@@ -323,9 +302,7 @@ void interpretKeys(){
   }
   if(((p.x-310)/14 == -22) && ((p.y-150)/9 == -16)){
     pressed = true;
-
   }
-
 }
 boolean toggle = true;
 void determineToggle(){
@@ -339,10 +316,9 @@ void determineToggle(){
   }
   if(((p.x-310)/14 == -22) && ((p.y-150)/9 == -16)){
     pressed = true;
-
   }
-  
 }
+
 void setup()
 {
   Serial.begin(115200);
@@ -357,14 +333,11 @@ void setup()
   totalY = 0;
   
   //reads an integer from the keyboard interface
-
+  
   tft.setTextColor(GREEN);
   tft.setTextSize(2);
   
-  
-  
   Serial.println("Enter Max Value:");
- 
   
   while(maxValue == 0){
     uint8_t flag;
@@ -379,7 +352,6 @@ void setup()
      if(Serial.available()){
      maxValue = Serial.parseInt();
      }
-    
     }
     else{   
      tft.drawRect(20,360, 90,30,GREEN);
@@ -429,7 +401,7 @@ void loop()
 
   axisInUse = totalY;
   lcdDisplay();
-  //displayProgress();
+  displayProgress();
   checkLEDS();
   prevY = totalY;
   prevTime = currentTime;

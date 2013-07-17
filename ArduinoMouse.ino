@@ -85,6 +85,8 @@ boolean startRecorded = false;
 
 float lastPercent;
 
+boolean toggle = true;
+
 // This function intercepts mouse movements
 void mouseMoved() {
   if(!startRecorded){
@@ -99,8 +101,8 @@ void mouseMoved() {
   totalY += tempYChange;
 
   //Serial.print(" Time, ");
-  Serial.print(currentTime);
-  Serial.print(", ");
+  //Serial.print(currentTime);
+  //Serial.print(", ");
 
   // Serial.print("Total Y, ");
   Serial.print(axisInUse);
@@ -132,13 +134,13 @@ void reset(){
 
 // Checks to see which leds should light up based on a desired distance value
 void checkLEDS() {
-  if(abs(axisInUse) >= (maxValue * 1/3)){
+  if(abs(axisInUse) >= 0 && abs(axisInUse) < maxValue * 4/5) {
     digitalWrite(4, HIGH); 
   }
   else{
     digitalWrite(4, LOW); 
   }
-  if(abs(axisInUse) >= (maxValue * 2/3)){
+  if(abs(axisInUse) >= (maxValue * 4/5) && abs(axisInUse) < maxValue){
     digitalWrite(3, HIGH); 
   }
   else{
@@ -155,18 +157,18 @@ void checkLEDS() {
 void lcdDisplay(){
   //writes the totalY value to the LCD screen
   //tft.fillScreen(BLACK);
-   
+
   tft.setCursor(20, 90);
   tft.print("EndDist: ");
   tft.print(maxValue);
 
   //writes the total distance traveled to the LCD screen
-    tft.setCursor(130,30);
-    tft.setTextColor(BLACK);
-    tft.print(prevY);
-    tft.setCursor(130 ,30 );
-    tft.setTextColor(GREEN);
-    tft.print(axisInUse);
+  tft.setCursor(130,30);
+  tft.setTextColor(BLACK);
+  tft.print(prevY);
+  tft.setCursor(130 ,30 );
+  tft.setTextColor(GREEN);
+  tft.print(axisInUse);
 
   //writes the time elapsed since the start of the program in milliseconds
   if(startRecorded){   
@@ -182,7 +184,7 @@ void lcdDisplay(){
 //displays a rectangle that displays progress towards the maxValue in 200ths
 void displayProgress(){
   float percent = abs(totalY)/float(maxValue);
-  
+
   if(percent < 1){
     tft.fillRect(20+ lastPercent*200,180,201 - lastPercent*200,20,BLACK);
     tft.fillRect(20,180,200*percent,20,GREEN);
@@ -304,9 +306,9 @@ void interpretKeys(){
     pressed = true;
   }
 }
-boolean toggle = true;
+
 void determineToggle(){
-  
+
   if(((p.x-310)/14 < 106 && (p.x-310)/14 > 15) && ((p.y-150)/9> 371 && (p.y-150)/9< 397)){
     if(pressed){
       toggle = !toggle;
@@ -331,57 +333,56 @@ void setup()
   Serial.println("Program started");
   totalX = 0;
   totalY = 0;
-  
-  //reads an integer from the keyboard interface
-  
+
   tft.setTextColor(GREEN);
   tft.setTextSize(2);
-  
+
+  //reads an integer from the keyboard interface
   Serial.println("Enter Max Value:");
-  
+
   while(maxValue == 0){
     uint8_t flag;
     p = touch.getpos(&flag);
-    
+
     if(toggle){
       tft.drawRect(20,360, 90,30,GREEN);
       tft.setCursor(30,370);
-       tft.print("Toggle");
-     tft.setCursor(20, 40);
-     tft.print("Waiting for input");
-     if(Serial.available()){
-     maxValue = Serial.parseInt();
-     }
+      tft.print("Toggle");
+      tft.setCursor(20, 40);
+      tft.print("Waiting for input");
+      if(Serial.available()){
+        maxValue = Serial.parseInt();
+      }
     }
     else{   
-     tft.drawRect(20,360, 90,30,GREEN);
-     tft.setCursor(30,370);
-     tft.print("Toggle");
-     displayTouchKeyboard();
-     interpretKeys();
-     if(enterValue != prevEnterValue){
-     tft.fillScreen(BLACK);
-     }
-     tft.setCursor(20,180);
-     tft.print(enterValue);
-     prevEnterValue = enterValue;
-     
+      tft.drawRect(20,360, 90,30,GREEN);
+      tft.setCursor(30,370);
+      tft.print("Toggle");
+      displayTouchKeyboard();
+      interpretKeys();
+      if(enterValue != prevEnterValue){
+        tft.fillScreen(BLACK);
+      }
+      tft.setCursor(20,180);
+      tft.print(enterValue);
+      prevEnterValue = enterValue;
+
     }
     determineToggle();
   }
 
   tft.fillScreen(BLACK);  
-  
+
   Serial.print("Maximum Value: ");
   Serial.println(maxValue);
   Serial.println();
-  
+
   tft.setCursor(20,30);
   tft.print("Distance: ");
-  
+
   tft.setCursor(20,60);
   tft.print("Time: ");
-  
+
   pinMode(3, OUTPUT);
   pinMode(2, OUTPUT);
   pinMode(4,OUTPUT);
@@ -406,6 +407,7 @@ void loop()
   prevY = totalY;
   prevTime = currentTime;
 }
+
 
 
 

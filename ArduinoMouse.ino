@@ -70,12 +70,12 @@ boolean pressed = true;
 //values for total x traveled and total y traveled
 int totalX;
 int totalY;
+float totalMM;
+float prevMM;
 int prevY;
 
-int axisInUse;
-
 //desired value for the leds to all be lit at
-int maxValue = 0;
+float maxValue = 0;
 
 //time keeping values
 float startTime = 0;
@@ -97,20 +97,20 @@ void mouseMoved() {
 
   totalX += mouse.getXChange();
   int tempYChange = mouse.getYChange();
-  ;
+  
   totalY += tempYChange;
-
+  totalMM = totalY/44.461;
   //Serial.print(" Time, ");
   //Serial.print(currentTime);
   //Serial.print(", ");
 
   // Serial.print("Total Y, ");
-  Serial.print(axisInUse);
+  Serial.println(totalMM);
 
   //Serial.print(" mm = ");
-  //Serial.print(float(totalY)/443.0);
+  //Serial.print(float(totalY)/45.0);
 
-  Serial.println();
+  //Serial.println();
 }
 
 // This function intercepts mouse button press
@@ -127,6 +127,7 @@ void mousePressed() {
 //resets values
 void reset(){
   totalX = 0;
+  totalMM = 0;
   totalY = 0;
   //overallY = 0;
   startTime = millis();
@@ -134,19 +135,19 @@ void reset(){
 
 // Checks to see which leds should light up based on a desired distance value
 void checkLEDS() {
-  if(abs(axisInUse) >= 0 && abs(axisInUse) < maxValue * 4/5) {
+  if(abs(totalMM) >= 0 && abs(totalMM) < maxValue * 4/5) {
     digitalWrite(4, HIGH); 
   }
   else{
     digitalWrite(4, LOW); 
   }
-  if(abs(axisInUse) >= (maxValue * 4/5) && abs(axisInUse) < maxValue){
+  if(abs(totalMM) >= (maxValue * 4/5) && abs(totalMM) < maxValue){
     digitalWrite(3, HIGH); 
   }
   else{
     digitalWrite(3, LOW); 
   }
-  if(abs(axisInUse) >= maxValue){
+  if(abs(totalMM) >= maxValue){
     digitalWrite(2, HIGH); 
   }
   else{
@@ -155,22 +156,21 @@ void checkLEDS() {
 }
 
 void lcdDisplay(){
-  //writes the totalY value to the LCD screen
-  //tft.fillScreen(BLACK);
+  //writes the max value to the LCD screen
 
   tft.setCursor(20, 90);
   tft.print("EndDist: ");
   tft.print(maxValue);
 
-  //writes the total distance traveled to the LCD screen
+  //writes the totalY value to the LCD screen
   tft.setCursor(130,30);
   tft.setTextColor(BLACK);
-  tft.print(prevY);
+  tft.print(prevMM);
   tft.setCursor(130 ,30 );
   tft.setTextColor(GREEN);
-  tft.print(axisInUse);
+  tft.print(totalMM);
 
-  //writes the time elapsed since the start of the program in milliseconds
+  //writes the time elapsed since the start of the program in seconds
   if(startRecorded){   
     tft.setCursor(80,60);
     tft.setTextColor(BLACK);
@@ -183,7 +183,7 @@ void lcdDisplay(){
 
 //displays a rectangle that displays progress towards the maxValue in 200ths
 void displayProgress(){
-  float percent = abs(totalY)/float(maxValue);
+  float percent = abs(totalMM)/float(maxValue);
 
   if(percent < 1){
     tft.fillRect(20+ lastPercent*200,180,201 - lastPercent*200,20,BLACK);
@@ -326,13 +326,14 @@ void setup()
   Serial.begin(115200);
   tft.begin();
   touch.begin();
-  Serial.setTimeout(50); 
+  //Serial.setTimeout(50); 
   Serial.println();
   Serial.println();
 
   Serial.println("Program started");
   totalX = 0;
   totalY = 0;
+  totalMM = 0;
 
   tft.setTextColor(GREEN);
   tft.setTextSize(2);
@@ -351,7 +352,7 @@ void setup()
       tft.setCursor(20, 40);
       tft.print("Waiting for input");
       if(Serial.available()){
-        maxValue = Serial.parseInt();
+        maxValue = Serial.parseFloat();
       }
     }
     else{   
@@ -400,11 +401,11 @@ void loop()
   usb.Task();
   uhd_set_vbof_active_high();
 
-  axisInUse = totalY;
   lcdDisplay();
   displayProgress();
   checkLEDS();
   prevY = totalY;
+  prevMM = totalMM;
   prevTime = currentTime;
 }
 

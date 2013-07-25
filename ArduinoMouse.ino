@@ -76,7 +76,7 @@ int prevY;
 
 //desired value for the leds to all be lit at
 float maxValue = 0;
-
+float SYSTEM_DEPTH = 69;
 //time keeping values
 float startTime = 0;
 float currentTime = 0;
@@ -99,7 +99,7 @@ void mouseMoved() {
   int tempYChange = mouse.getYChange();
   
   totalY += tempYChange;
-  totalMM = totalY/44.461;
+  totalMM = ((totalY/37.426)-SYSTEM_DEPTH);
   //Serial.print(" Time, ");
   //Serial.print(currentTime);
   //Serial.print(", ");
@@ -135,19 +135,19 @@ void reset(){
 
 // Checks to see which leds should light up based on a desired distance value
 void checkLEDS() {
-  if(abs(totalMM) >= 0 && abs(totalMM) < maxValue * 4/5) {
+  if((totalMM) >= 0 && (totalMM) < maxValue * 4/5) {
     digitalWrite(4, HIGH); 
   }
   else{
     digitalWrite(4, LOW); 
   }
-  if(abs(totalMM) >= (maxValue * 4/5) && abs(totalMM) < maxValue){
+  if((totalMM) >= (maxValue * 4/5) && (totalMM) < maxValue){
     digitalWrite(3, HIGH); 
   }
   else{
     digitalWrite(3, LOW); 
   }
-  if(abs(totalMM) >= maxValue){
+  if((totalMM) >= maxValue){
     digitalWrite(2, HIGH); 
   }
   else{
@@ -183,8 +183,8 @@ void lcdDisplay(){
 
 //displays a rectangle that displays progress towards the maxValue in 200ths
 void displayProgress(){
-  float percent = abs(totalMM)/float(maxValue);
-
+  float percent = (totalMM)/float(maxValue);
+if(percent>0){
   if(percent < 1){
     tft.fillRect(20+ lastPercent*200,180,201 - lastPercent*200,20,BLACK);
     tft.fillRect(20,180,200*percent,20,GREEN);
@@ -194,6 +194,7 @@ void displayProgress(){
     tft.fillRect(20,180,200,20,RED); 
   }
   lastPercent = percent;
+}
 }
 
 //displays the keyboard

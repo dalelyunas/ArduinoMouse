@@ -10,8 +10,10 @@
 
 // Require mouse control library
 #include <MouseController.h>
+#include <ads7843.h>
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <tftlib.h> // Hardware-specific library
+
 #define PSTR(a)  a
 // The control pins for the LCD can be assigned to any digital or
 // analog pins...but we'll use the analog pins as this allows us to
@@ -23,18 +25,21 @@
 
 #define LCD_RESET A4 // Can alternately just connect to Arduino's reset pin
 
-// When using the BREAKOUT BOARD only, use these 8 data lines to the LCD:
-// For the Arduino Uno, Duemilanove, Diecimila, etc.:
-//   D0 connects to digital pin 8  (Notice these are
-//   D1 connects to digital pin 9   NOT in order!)
-//   D2 connects to digital pin 2
-//   D3 connects to digital pin 3
-//   D4 connects to digital pin 4
-//   D5 connects to digital pin 5
-//   D6 connects to digital pin 6
-//   D7 connects to digital pin 7
-// For the Arduino Mega, use digital pins 22 through 29
-// (on the 2-row header at the end of the board).
+/** ADS7843 pin map */
+#ifdef ELECFREAKS_TFT_SHIELD_V2
+#define DCLK     6
+#define CS       5  
+#define DIN      4 
+#define DOUT     3
+#define IRQ      2 
+#elif defined ELECHOUSE_DUE_TFT_SHIELD_V1
+/** elechouse TFT shield pin map */
+#define DCLK     25
+#define CS       26 
+#define DIN      27 
+#define DOUT     29
+#define IRQ      30
+#endif
 
 // Assign human-readable names to some common 16-bit color values:
 #define	BLACK   0x0000
@@ -47,35 +52,48 @@
 #define WHITE   0xFFFF
 
 TFTLCD tft;
+ADS7843 touch(CS, DCLK, DIN, DOUT, IRQ);
 
 // Initialize USB Controller
 USBHost usb;
 
+Point p;
 
 // Attach mouse controller to USB
 MouseController mouse(usb);
 
-
+//variables to control the keyboard
+int enterValue = 0;
+int prevEnterValue = 0;
+boolean pressed = true;
 
 //values for total x traveled and total y traveled
 int totalX;
 int totalY;
-int prevY;
-int overallY;
-int axisInUse;
+
+float totalMM;
+float prevMM;
+
+//distance from the sensor to the front of the smart template
+float SYSTEM_DEPTH = 73.447;
+
+//angle values
+int totalDegrees = 0;
+int prevDegrees;
 
 //desired value for the leds to all be lit at
-int maxValue = 3000;
+float maxValue = 100;
+
 
 //time keeping values
 float startTime = 0;
 float currentTime = 0;
-float prevTime = 0;
-
+float prevTime;
 boolean startRecorded = false;
 
-//pixels/sec
-float pixelPS = 0;
+//other variables
+float lastPercent;
+boolean toggle = true;
 
 // This function intercepts mouse movements
 void mouseMoved() {
@@ -86,73 +104,41 @@ void mouseMoved() {
   }
 
   totalX += mouse.getXChange();
+
+  if(totalX > 104.848){
+    totalX = 0; 
+  }
+  else if(totalX < 0){
+    totalX = 104.848;
+  }
+
   int tempYChange = mouse.getYChange();
-  ;
-  totalY += tempYChange;
+  totalDegrees = totalX * 3.424;
 
-  overallY += abs(tempYChange);
-
-
-  //pixelPS = abs(totalY-prevY) / abs(currentTime-prevTime);
-
-  //Serial.print("Total X: ");
-  //Serial.print(totalX);
+  //Serial.print(totalDegrees);
   //Serial.print(", ");
-  //Serial.print(", Time, ");
-  Serial.print(currentTime);
-  Serial.print(", ");
- // Serial.print("Total Y, ");
-  Serial.print(axisInUse);
-   
 
-  //Serial.print(" cm = ");
-  //Serial.print(float(totalY)/443.0);
-  Serial.println();
+  totalY += tempYChange;
+  totalMM = (-1 *(totalY/45.607)-SYSTEM_DEPTH);
+
+  //Serial.println(totalMM);
 }
-
-
-
-// This function intercepts mouse button press
-void mousePressed() {
-
-  if (mouse.getButton(LEFT_BUTTON)){
-    Serial.println("End");
-  }
-  /*if (mouse.getButton(MIDDLE_BUTTON)){
-   Serial.print("M");
-   
-   }*/
-  if (mouse.getButton(RIGHT_BUTTON)){
-    Serial.println("Values Reset");
-    reset();
-
-  }
-}
-//resets values
-void reset(){
-
-  totalX = 0;
-  totalY = 0;
-  overallY = 0;
-  startTime = millis();
-}
-
 
 // Checks to see which leds should light up based on a desired distance value
 void checkLEDS() {
-  if(abs(axisInUse) >= (maxValue * 1/3)){
+  if((totalMM) < maxValue * 4/5) {
     digitalWrite(4, HIGH); 
   }
   else{
     digitalWrite(4, LOW); 
   }
-  if(abs(axisInUse) >= (maxValue * 2/3)){
+  if((totalMM) >= (maxValue * 4/5) && (totalMM) < maxValue){
     digitalWrite(3, HIGH); 
   }
   else{
     digitalWrite(3, LOW); 
   }
-  if(abs(axisInUse) >= maxValue){
+  if((totalMM) >= maxValue){
     digitalWrite(2, HIGH); 
   }
   else{
@@ -161,87 +147,254 @@ void checkLEDS() {
 }
 
 void lcdDisplay(){
+
   //writes the totalY value to the LCD screen
-  tft.fillScreen(BLACK);
-  
-  tft.setCursor(20,30);
+  tft.setCursor(130,30);
+  tft.setTextColor(BLACK);
+  tft.print(prevMM);
+  tft.setCursor(130 ,30 );
   tft.setTextColor(GREEN);
-  tft.setTextSize(2);
-  tft.print("Distance: ");
-  tft.print(axisInUse);
+  tft.print(totalMM);
 
-  //writes the total distance traveled to the LCD screen
-  tft.setCursor(20, 90);
-  tft.print("TtlDist:");
-  tft.print(" ");
-  tft.print(overallY);
+  //writes the degrees to the LCD screen
+  tft.setCursor(120, 120);
+  tft.setTextColor(BLACK);
+  tft.print(prevDegrees);
+  tft.setCursor(120,120);
+  tft.setTextColor(GREEN);
+  tft.print(totalDegrees);
 
-  //writes the time elapsed since the start of the program in milliseconds
-  if(startRecorded){
-    tft.setCursor(20,60);
-    tft.print("Time: ");
+  //writes the time elapsed since the start of the program in seconds
+  if(startRecorded){   
+    tft.setCursor(80,60);
+    tft.setTextColor(BLACK);
+    tft.print(prevTime);
+    tft.setCursor(80,60);
+    tft.setTextColor(GREEN);
     tft.print(currentTime);
   }
-  
-  
-  
-
 }
 
-//displays a bar that displays progress towards the maxValue in increments of 10 percent
+//displays a rectangle that displays progress towards the maxValue in 200ths
 void displayProgress(){
-  String bar = "|";
-  float percent = ((float(abs(axisInUse))/float(maxValue)) * 100.0)/10.0;
-
-  tft.setCursor(20, 120);
-
-  if(percent<=10){
-    for(int i = 0; i<int(percent) ;i++){
-      bar+= "-";
+  float percent = (totalMM)/float(maxValue);
+  if(percent>0){
+    if(percent < 1){
+      tft.fillRect(20+ lastPercent*200,180,201 - lastPercent*200,20,BLACK);
+      tft.fillRect(20,180,200*percent,20,GREEN);
     }
-    for(int i = 0;i<10- int(percent);i++){
-      bar+= " "; 
+    else if (percent > 1.00){
+      tft.setTextColor(RED);
+      tft.fillRect(20,180,200,20,RED); 
     }
+    lastPercent = percent;
   }
-  else{
-    bar+= "----------"; 
-  }
-
-  bar+="|";
-  tft.print(bar);
+   //draws a line to represent the current angle of the needle
+   tft.drawLine(120,300, int(cos(prevDegrees * (PI/180)) * 80)+120, int(sin(prevDegrees* (PI/180))*80)+300, BLACK);
+   tft.drawLine(120,300, int(cos(totalDegrees* (PI/180)) * 80)+120, int(sin(totalDegrees* (PI/180))*80)+300, GREEN);
 }
 
+//displays the keyboard
+void displayTouchKeyboard(){
+  int x = 20;
+  int y = 220;
+  int number = 0;
+  int side = 30;
+  tft.setCursor(20, 150);
+  tft.print("Enter Max Value:");
 
+  for(int i = 0;i<2;i++){
+    for(int z = 0; z<5;z++){
+      tft.drawRect(x+40*z,y+40*i,side,side,GREEN);
+      tft.setCursor(x+40*z+10,y+40*i+10);
+      tft.print(number);  
+      number++;
+    }    
+  }
 
+  tft.drawRect(x,y+80,90,side,GREEN);
+  tft.drawRect(x+100,y+80,90,side,GREEN);
+  tft.setCursor(x+10, y+90);
+  tft.print("Enter");
+  tft.setCursor(x+110, y+90);
+  tft.print("Back");
+}
+
+//determines when keys are pressed and what to do when a key is pressed
+void interpretKeys(){
+
+  String temp = "";
+  temp += enterValue;
+
+  if(temp.length()<7){
+    if(((p.x-310)/14 < 42 && (p.x-310)/14 > 16) && ((p.y-150)/9> 229 && (p.y-150)/9< 253)){
+      if(pressed){
+        enterValue = enterValue*10 + 0;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 83 && (p.x-310)/14 > 58) && ((p.y-150)/9> 229 && (p.y-150)/9< 253)){
+      if(pressed){
+        enterValue = enterValue*10 + 1;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 127 && (p.x-310)/14 > 98) && ((p.y-150)/9> 229 && (p.y-150)/9< 253)){
+      if(pressed){
+        enterValue = enterValue*10 + 2;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 171 && (p.x-310)/14 > 145) && ((p.y-150)/9> 229 && (p.y-150)/9< 253)){
+      if(pressed){
+        enterValue = enterValue*10 + 3;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 212 && (p.x-310)/14 > 185) && ((p.y-150)/9> 229 && (p.y-150)/9< 253)){
+      if(pressed){
+        enterValue = enterValue*10 + 4;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 42 && (p.x-310)/14 > 16) && ((p.y-150)/9> 270 && (p.y-150)/9< 294)){
+      if(pressed){
+        enterValue = enterValue*10 + 5;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 83 && (p.x-310)/14 > 58) && ((p.y-150)/9> 270 && (p.y-150)/9< 294)){
+      if(pressed){
+        enterValue = enterValue*10 + 6;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 127 && (p.x-310)/14 > 98) && ((p.y-150)/9> 270 && (p.y-150)/9< 294)){
+      if(pressed){
+        enterValue = enterValue*10 + 7;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 171 && (p.x-310)/14 > 145) && ((p.y-150)/9> 270 && (p.y-150)/9< 294)){
+      if(pressed){
+        enterValue = enterValue*10 + 8;
+        pressed = false;
+      }
+    }
+    else if(((p.x-310)/14 < 212 && (p.x-310)/14 > 185) && ((p.y-150)/9> 270 && (p.y-150)/9< 294)){
+      if(pressed){
+        enterValue = enterValue*10 + 9;
+        pressed = false;
+      }
+    }
+  }
+  if(((p.x-310)/14 < 212 && (p.x-310)/14 > 123) && ((p.y-150)/9> 310 && (p.y-150)/9< 338)){
+    if(pressed){
+      enterValue = enterValue/10;
+      pressed = false;
+    }
+  }
+  if(((p.x-310)/14 < 108 && (p.x-310)/14 > 16) && ((p.y-150)/9> 310 && (p.y-150)/9< 338)){
+    if(pressed){
+      maxValue = enterValue;
+      pressed = false;
+    }
+  }
+  if(((p.x-310)/14 == -22) && ((p.y-150)/9 == -16)){
+    pressed = true;
+  }
+}
+
+//determines whether the screen is set to manual input or waits for external input
+void determineToggle(){
+
+  if(((p.x-310)/14 < 106 && (p.x-310)/14 > 15) && ((p.y-150)/9> 371 && (p.y-150)/9< 397)){
+    if(pressed){
+      toggle = !toggle;
+      tft.fillScreen(BLACK);
+      pressed = false;
+    }
+  }
+  if(((p.x-310)/14 == -22) && ((p.y-150)/9 == -16)){
+    pressed = true;
+  }
+}
 
 void setup()
 {
   Serial.begin(115200);
   tft.begin();
-  
+  touch.begin();
+  //Serial.setTimeout(50); 
   Serial.println();
   Serial.println();
-  Serial.println();
-  Serial.println();
-  Serial.println();
-  
+
   Serial.println("Program started");
   totalX = 0;
   totalY = 0;
+  totalMM = 0;
 
-  //reads an integer from the serial stream
-  Serial.println("Enter maximum value:");
+  tft.setTextColor(GREEN);
+  tft.setTextSize(2);
+
+  //reads a float from the keyboard interface or waits for input
+  Serial.println("Enter Max Value:");
+
   while(maxValue == 0){
-    maxValue = Serial.parseInt();
+    uint8_t flag;
+    p = touch.getpos(&flag);
 
+    if(toggle){
+      tft.drawRect(20,360, 90,30,GREEN);
+      tft.setCursor(30,370);
+      tft.print("Toggle");
+      tft.setCursor(20, 40);
+      tft.print("Waiting for input");
+      if(Serial.available()){
+        maxValue = Serial.parseFloat();
+      }
+    }
+    else{   
+      tft.drawRect(20,360, 90,30,GREEN);
+      tft.setCursor(30,370);
+      tft.print("Toggle");
+      displayTouchKeyboard();
+      interpretKeys();
+      if(enterValue != prevEnterValue){
+        tft.fillScreen(BLACK);
+      }
+      tft.setCursor(20,180);
+      tft.print(enterValue);
+      prevEnterValue = enterValue;
+
+    }
+    determineToggle();
   }
+
+  tft.fillScreen(BLACK);  
+
   Serial.print("Maximum Value: ");
   Serial.println(maxValue);
   Serial.println();
+
+  tft.setCursor(20, 90);
+  tft.print("EndDist: ");
+  tft.setCursor(120,90);
+  tft.print(maxValue);
+
+  tft.setCursor(20, 120);
+  tft.print("Degrees: ");
+
+  tft.setCursor(20,30);
+  tft.print("Distance: ");
+
+  tft.setCursor(20,60);
+  tft.print("Time: ");
+
   pinMode(3, OUTPUT);
   pinMode(2, OUTPUT);
   pinMode(4,OUTPUT);
-  pinMode(7, INPUT);
+
   digitalWrite(4, LOW);
   digitalWrite(3, LOW);
   digitalWrite(2, LOW);
@@ -249,19 +402,29 @@ void setup()
 
 void loop()
 {
-
   currentTime = (millis() - startTime)/1000;
-  
-  // Process USB tasks
-  usb.Task();
 
-  axisInUse = totalY;
+  //Process USB tasks
+  usb.Task();
+  uhd_set_vbof_active_high();
+
   lcdDisplay();
   displayProgress();
   checkLEDS();
-  prevY = totalY;
+
+  prevMM = totalMM;
   prevTime = currentTime;
+  prevDegrees = totalDegrees;
 }
 
- 
+
+
+
+
+
+
+
+
+
+
 

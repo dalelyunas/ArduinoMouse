@@ -70,21 +70,28 @@ boolean pressed = true;
 //values for total x traveled and total y traveled
 int totalX;
 int totalY;
+
 float totalMM;
 float prevMM;
-int prevY;
+
+float SYSTEM_DEPTH = 73.447;
+
+//angle values
+int totalDegrees = 0;
+int prevDegrees;
 
 //desired value for the leds to all be lit at
-float maxValue = 0;
-float SYSTEM_DEPTH = 69;
+float maxValue = 100;
+
+
 //time keeping values
 float startTime = 0;
 float currentTime = 0;
 float prevTime;
 boolean startRecorded = false;
 
+//other variables
 float lastPercent;
-
 boolean toggle = true;
 
 // This function intercepts mouse movements
@@ -96,46 +103,29 @@ void mouseMoved() {
   }
 
   totalX += mouse.getXChange();
+
+  if(totalX > 104.848){
+    totalX = 0; 
+  }
+  else if(totalX < 0){
+    totalX = 104.848;
+  }
+
   int tempYChange = mouse.getYChange();
-  
+  totalDegrees = totalX * 3.424;
+
+  Serial.print(totalDegrees);
+  Serial.print(", ");
+
   totalY += tempYChange;
-  totalMM = ((totalY/37.426)-SYSTEM_DEPTH);
-  //Serial.print(" Time, ");
-  //Serial.print(currentTime);
-  //Serial.print(", ");
+  totalMM = (-1 *(totalY/45.607)-SYSTEM_DEPTH);
 
-  // Serial.print("Total Y, ");
   Serial.println(totalMM);
-
-  //Serial.print(" mm = ");
-  //Serial.print(float(totalY)/45.0);
-
-  //Serial.println();
-}
-
-// This function intercepts mouse button press
-void mousePressed() {
-
-  if (mouse.getButton(LEFT_BUTTON)){
-    Serial.println("End");
-  }
-  if (mouse.getButton(RIGHT_BUTTON)){
-    Serial.println("Values Reset");
-    reset();
-  }
-}
-//resets values
-void reset(){
-  totalX = 0;
-  totalMM = 0;
-  totalY = 0;
-  //overallY = 0;
-  startTime = millis();
 }
 
 // Checks to see which leds should light up based on a desired distance value
 void checkLEDS() {
-  if((totalMM) >= 0 && (totalMM) < maxValue * 4/5) {
+  if((totalMM) < maxValue * 4/5) {
     digitalWrite(4, HIGH); 
   }
   else{
@@ -156,11 +146,6 @@ void checkLEDS() {
 }
 
 void lcdDisplay(){
-  //writes the max value to the LCD screen
-
-  tft.setCursor(20, 90);
-  tft.print("EndDist: ");
-  tft.print(maxValue);
 
   //writes the totalY value to the LCD screen
   tft.setCursor(130,30);
@@ -169,6 +154,14 @@ void lcdDisplay(){
   tft.setCursor(130 ,30 );
   tft.setTextColor(GREEN);
   tft.print(totalMM);
+
+  //writes the degrees to the LCD screen
+  tft.setCursor(120, 120);
+  tft.setTextColor(BLACK);
+  tft.print(prevDegrees);
+  tft.setCursor(120,120);
+  tft.setTextColor(GREEN);
+  tft.print(totalDegrees);
 
   //writes the time elapsed since the start of the program in seconds
   if(startRecorded){   
@@ -184,17 +177,17 @@ void lcdDisplay(){
 //displays a rectangle that displays progress towards the maxValue in 200ths
 void displayProgress(){
   float percent = (totalMM)/float(maxValue);
-if(percent>0){
-  if(percent < 1){
-    tft.fillRect(20+ lastPercent*200,180,201 - lastPercent*200,20,BLACK);
-    tft.fillRect(20,180,200*percent,20,GREEN);
+  if(percent>0){
+    if(percent < 1){
+      tft.fillRect(20+ lastPercent*200,180,201 - lastPercent*200,20,BLACK);
+      tft.fillRect(20,180,200*percent,20,GREEN);
+    }
+    else if (percent > 1.00){
+      tft.setTextColor(RED);
+      tft.fillRect(20,180,200,20,RED); 
+    }
+    lastPercent = percent;
   }
-  else if (percent > 1.00){
-    tft.setTextColor(RED);
-    tft.fillRect(20,180,200,20,RED); 
-  }
-  lastPercent = percent;
-}
 }
 
 //displays the keyboard
@@ -308,6 +301,7 @@ void interpretKeys(){
   }
 }
 
+//determines whether the screen is set to manual input or waits for external input
 void determineToggle(){
 
   if(((p.x-310)/14 < 106 && (p.x-310)/14 > 15) && ((p.y-150)/9> 371 && (p.y-150)/9< 397)){
@@ -379,6 +373,14 @@ void setup()
   Serial.println(maxValue);
   Serial.println();
 
+  tft.setCursor(20, 90);
+  tft.print("EndDist: ");
+  tft.setCursor(120,90);
+  tft.print(maxValue);
+
+  tft.setCursor(20, 120);
+  tft.print("Degrees: ");
+
   tft.setCursor(20,30);
   tft.print("Distance: ");
 
@@ -405,10 +407,14 @@ void loop()
   lcdDisplay();
   displayProgress();
   checkLEDS();
-  prevY = totalY;
+
   prevMM = totalMM;
   prevTime = currentTime;
+
+  prevDegrees = totalDegrees;
 }
+
+
 
 
 

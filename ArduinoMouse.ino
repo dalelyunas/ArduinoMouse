@@ -74,6 +74,7 @@ int totalY;
 float totalMM;
 float prevMM;
 
+//distance from the sensor to the front of the smart template
 float SYSTEM_DEPTH = 73.447;
 
 //angle values
@@ -114,13 +115,13 @@ void mouseMoved() {
   int tempYChange = mouse.getYChange();
   totalDegrees = totalX * 3.424;
 
-  Serial.print(totalDegrees);
-  Serial.print(", ");
+  //Serial.print(totalDegrees);
+  //Serial.print(", ");
 
   totalY += tempYChange;
   totalMM = (-1 *(totalY/45.607)-SYSTEM_DEPTH);
 
-  Serial.println(totalMM);
+  //Serial.println(totalMM);
 }
 
 // Checks to see which leds should light up based on a desired distance value
@@ -188,6 +189,9 @@ void displayProgress(){
     }
     lastPercent = percent;
   }
+   //draws a line to represent the current angle of the needle
+   tft.drawLine(120,300, int(cos(prevDegrees * (PI/180)) * 80)+120, int(sin(prevDegrees* (PI/180))*80)+300, BLACK);
+   tft.drawLine(120,300, int(cos(totalDegrees* (PI/180)) * 80)+120, int(sin(totalDegrees* (PI/180))*80)+300, GREEN);
 }
 
 //displays the keyboard
@@ -333,7 +337,7 @@ void setup()
   tft.setTextColor(GREEN);
   tft.setTextSize(2);
 
-  //reads an integer from the keyboard interface
+  //reads a float from the keyboard interface or waits for input
   Serial.println("Enter Max Value:");
 
   while(maxValue == 0){
@@ -400,7 +404,7 @@ void loop()
 {
   currentTime = (millis() - startTime)/1000;
 
-  // Process USB tasks
+  //Process USB tasks
   usb.Task();
   uhd_set_vbof_active_high();
 
@@ -410,7 +414,6 @@ void loop()
 
   prevMM = totalMM;
   prevTime = currentTime;
-
   prevDegrees = totalDegrees;
 }
 
